@@ -4,7 +4,7 @@ package com.cp.cpdir.model;
 Can predefine any title
  */
 public enum Title {
-    CEO,
+    CEO ,
     SoftwareDeveloper,
     TeamLeader,
     TechnologyLeader

@@ -5,6 +5,7 @@ import com.cp.cpdir.service.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -19,26 +20,22 @@ public class EmployeeController {
 
     @PostMapping("/addDeveloper")
     public List<Employee> addNewDeveloper(@RequestBody Employee employee){
-        employeeService.saveDeveloper(employee);
-        return null;
+        return employeeService.saveDeveloper(employee) ? employeeService.getAllEmployees() : new LinkedList<>();
     }
 
     @PostMapping("/addManager")
     public List<Employee> addNewManager(@RequestBody Employee employee){
-        employeeService.saveManager(employee);
-        return null;
+        return employeeService.saveManager(employee) ? employeeService.getAllEmployees() : new LinkedList<>();
     }
 
     @DeleteMapping("/removeEmployee/{id}")
     public List<Employee> removeEmployee(@PathVariable(value = "id") String userId){
-        employeeService.removeEmployee(userId);
-        return employeeService.getAllEmployees();
+        return employeeService.removeEmployee(userId) ? employeeService.getAllEmployees() : new LinkedList<>();
     }
 
     @PutMapping("/editEmployee/{id}")
     public List<Employee> editEmployee(@PathVariable(value = "id") String userId, @RequestBody Employee employeeDetails){
-        employeeService.editEmployee(userId, employeeDetails);
-        return employeeService.getAllEmployees();
+        return employeeService.editEmployee(userId, employeeDetails) ? employeeService.getAllEmployees() : new LinkedList<>();
     }
 
     @GetMapping("/reportingEmployees/{id},{order}")

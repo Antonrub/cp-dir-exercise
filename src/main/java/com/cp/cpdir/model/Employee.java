@@ -32,7 +32,7 @@ public class Employee {
     private String directManager;
 
     @Column(name = "phone", nullable = false)
-    private Integer phone;
+    private String phone;
 
     @Column(name = "reporting_employees")
     @ElementCollection(targetClass = Employee.class)
@@ -88,11 +88,11 @@ public class Employee {
         this.directManager = directManager;
     }
 
-    public Integer getPhone() {
+    public String getPhone() {
         return phone;
     }
 
-    public void setPhone(Integer phone) {
+    public void setPhone(String phone) {
         this.phone = phone;
     }
 
