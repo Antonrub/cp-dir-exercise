@@ -1,5 +1,6 @@
 package com.cp.cpdir.model;
 
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -11,15 +12,18 @@ import java.util.List;
 @EntityListeners(AuditingEntityListener.class)
 public class Employee {
 
-    @Id @GeneratedValue(generator="system-uuid")
-    @GenericGenerator(name="system-uuid", strategy = "uuid")
-    private String id;
+    @Id
+    @GeneratedValue()
+    private Long id;
 
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
     @Column(name = "last_name", nullable = false)
     private String lastName;
+
+    @Formula(value = "CONCAT(last_name, first_name)")
+    private String name;
 
     @Column(name = "team_name", nullable = false)
     private String teamName;
@@ -29,22 +33,20 @@ public class Employee {
     private List<Title> titles;
 
     @Column(name = "direct_manager", nullable = false)
-    private String directManager;
+    private Long directManager;
 
     @Column(name = "phone", nullable = false)
     private String phone;
 
     @Column(name = "reporting_employees")
     @ElementCollection(targetClass = Employee.class)
-    private List<Employee> reportingEmployees;
+    private List<Long> reportingEmployees;
 
 
     // =========================================== Getters & Setters ============================================
-    public String getId() {
-        return id;
-    }
+    public Long getId() { return id; }
 
-    public void setId(String id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -64,6 +66,8 @@ public class Employee {
         this.lastName = lastName;
     }
 
+    public String getName() { return name; }
+
     public String getTeamName() {
         return teamName;
     }
@@ -72,19 +76,17 @@ public class Employee {
         this.teamName = teamName;
     }
 
-    public List<Title> getTitles() {
-        return titles;
-    }
+    public List<Title> getTitles() { return titles; }
 
     public void setTitles(List<Title> titles) {
         this.titles = titles;
     }
 
-    public String getDirectManager() {
+    public Long getDirectManager() {
         return directManager;
     }
 
-    public void setDirectManager(String directManager) {
+    public void setDirectManager(Long directManager) {
         this.directManager = directManager;
     }
 
@@ -96,11 +98,11 @@ public class Employee {
         this.phone = phone;
     }
 
-    public List<Employee> getReportingEmployees() {
+    public List<Long> getReportingEmployees() {
         return reportingEmployees;
     }
 
-    public void setReportingEmployees(List<Employee> reportingEmployees) {
+    public void setReportingEmployees(List<Long> reportingEmployees) {
         this.reportingEmployees = reportingEmployees;
     }
 

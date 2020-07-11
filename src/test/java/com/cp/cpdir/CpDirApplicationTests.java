@@ -1,6 +1,7 @@
 package com.cp.cpdir;
 
 import com.cp.cpdir.model.Employee;
+import com.cp.cpdir.model.Title;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
@@ -14,6 +15,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.Arrays;
 import java.util.LinkedList;
 
 @RunWith(SpringRunner.class)
@@ -50,21 +52,44 @@ class CpDirApplicationTests {
     }
 
     @Test
-    public void testCreateUser() {
+    public void addNewDeveloperTest() {
 
         Employee employee = new Employee();
 
-        employee.setId("1");
-        employee.setFirstName("a");
-        employee.setLastName("a");
-        employee.setDirectManager("12345");
-        employee.setPhone(02133254);
-        employee.setTeamName("TOC");
-        employee.setTitles(new LinkedList<>());
+        employee.setId(2L);
+        employee.setFirstName("A1");
+        employee.setLastName("A1");
+        employee.setDirectManager(1L);
+        employee.setPhone("1");
+        employee.setTeamName("First Team");
+        employee.setTitles(new LinkedList<>(Arrays.asList(Title.SoftwareDeveloper)));
 
 
 
         ResponseEntity<Employee> postResponse = restTemplate.postForEntity(getRootUrl() + "/addDeveloper", employee, Employee.class);
+
+        Assert.assertNotNull(postResponse);
+
+        Assert.assertNotNull(postResponse.getBody());
+
+    }
+
+    @Test
+    public void addNewManagerTest() {
+
+        Employee employee = new Employee();
+
+        employee.setId(1L);
+        employee.setFirstName("Gil");
+        employee.setLastName("Shwed");
+        employee.setDirectManager(1L);
+        employee.setPhone("02133254");
+        employee.setTeamName("CP");
+        employee.setTitles(new LinkedList<>(Arrays.asList(Title.CEO)));
+
+
+
+        ResponseEntity<Employee> postResponse = restTemplate.postForEntity(getRootUrl() + "/addManager", employee, Employee.class);
 
         Assert.assertNotNull(postResponse);
 
