@@ -17,6 +17,9 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.*;
 
+/**
+ * These tests were made for me to semi-auto check my code    * Doesn't work as intended JUnit
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = CpDirApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class CpDirApplicationTests {
@@ -125,7 +128,7 @@ class CpDirApplicationTests {
         employee10.setTitles(new LinkedList<>(Arrays.asList(Title.SoftwareDeveloper)));
 
 
-//        ResponseEntity<Map> postResponse1 = restTemplate.postForEntity(getRootUrl() + "/addManager", employee1, Map.class);
+        ResponseEntity<Map> postResponse1 = restTemplate.postForEntity(getRootUrl() + "/addManager", employee1, Map.class);
         ResponseEntity<Map> postResponse2 = restTemplate.postForEntity(getRootUrl() + "/addManager", employee2, Map.class);
         ResponseEntity<Map> postResponse3 = restTemplate.postForEntity(getRootUrl() + "/addManager", employee3, Map.class);
         ResponseEntity<Map> postResponse4 = restTemplate.postForEntity(getRootUrl() + "/addManager", employee4, Map.class);
@@ -170,8 +173,6 @@ class CpDirApplicationTests {
         employee.setPhone("02133254");
         employee.setTeamName("Third Team");
         employee.setTitles(new LinkedList<>(Arrays.asList(Title.CEO)));
-
-
 
         ResponseEntity<Map> postResponse = restTemplate.postForEntity(getRootUrl() + "/addManager", employee, Map.class);
 

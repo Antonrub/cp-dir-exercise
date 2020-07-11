@@ -1,7 +1,6 @@
 package com.cp.cpdir.model;
 
-import org.hibernate.annotations.Formula;
-import org.hibernate.annotations.GenericGenerator;
+
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -63,7 +62,6 @@ public class Employee {
         this.lastName = lastName;
     }
 
-    public String getName() { return name; }
 
     public String getTeamName() {
         return teamName;

@@ -179,12 +179,17 @@ public class EmployeeService {
      */
     private boolean saveEmployee(Employee employee){
         try {
+            List<Employee> employeesToSave = new ArrayList<>();
             employee.setReportingEmployees(new LinkedList<>());
-            Employee dirManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
-            if (dirManager == null) return false;
-            employeeRepository.save(employee);
-            dirManager.getReportingEmployees().add(employee.getId());
-            employeeRepository.save(dirManager);
+            if (employee.getId() != 1) { // saved for Gil Shwed
+                Employee dirManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
+                if (dirManager == null) return false;
+                dirManager.getReportingEmployees().add(employee.getId());
+                employeesToSave.add(dirManager);
+            }
+            employeesToSave.add(employee);
+            employeeRepository.saveAll(employeesToSave);
+
             return true;
         }
         catch (Exception e){
@@ -240,8 +245,8 @@ public class EmployeeService {
         if (employeeDetails.getLastName() != null && employeeDetails.getLastName().length() == 0) return false;
         if (employeeDetails.getTeamName() != null && employeeDetails.getTeamName().length() == 0) return false;
         if (employeeDetails.getTitles() != null &&
-                ((currentEmp.getReportingEmployees().size() != 0 && !titlesLegalityCheck(employeeDetails.getTitles(), "manager")) ||
-                        employeeDetails.getTitles().contains(Title.CEO))) return false;
+                ((currentEmp.getReportingEmployees().size() != 0 && !titlesLegalityCheck(employeeDetails.getTitles(), "manager")) /*||
+                        employeeDetails.getTitles().contains(Title.CEO)*/)) return false;
         if (employeeDetails.getDirectManager() != null && (!employeeRepository.existsById(employeeDetails.getDirectManager()) || containsManagementCircularity(employeeDetails, currentEmp))) return false;
         return employeeDetails.getPhone() == null || numericLegalityCheck(employeeDetails.getPhone());
     }
