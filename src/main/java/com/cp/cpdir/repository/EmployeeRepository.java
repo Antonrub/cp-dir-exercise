@@ -9,6 +9,7 @@ import java.util.List;
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
 
-    List<Employee> findAllByIdOrderByLastNameAscFirstNameAsc(List<Long> ids);
-    List<Employee> findAllByIdOrderByLastNameDescFirstNameDesc(List<Long> ids);
+    List<Employee> findByIdInOrderByLastNameAscFirstNameAsc(List<Long> ids);
+    List<Employee> findByIdInOrderByLastNameDescFirstNameDesc(List<Long> ids);
+
 }

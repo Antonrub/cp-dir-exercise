@@ -41,7 +41,7 @@ public class EmployeeController {
                 Collections.singletonMap("failed", null);
     }
 
-    @PutMapping("/editEmployee/{id}")
+    @PostMapping("/editEmployee/{id}")
     public Map<String, List<Employee>> editEmployee(@PathVariable(value = "id") Long userId, @RequestBody Employee employeeDetails){
         return employeeService.editEmployee(userId, employeeDetails) ?
                 Collections.singletonMap("employees", employeeService.getAllEmployees()) :

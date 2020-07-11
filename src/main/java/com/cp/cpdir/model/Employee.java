@@ -13,7 +13,6 @@ import java.util.List;
 public class Employee {
 
     @Id
-    @GeneratedValue()
     private Long id;
 
     @Column(name = "first_name", nullable = false)
@@ -22,14 +21,12 @@ public class Employee {
     @Column(name = "last_name", nullable = false)
     private String lastName;
 
-    @Formula(value = "CONCAT(last_name, first_name)")
-    private String name;
-
     @Column(name = "team_name", nullable = false)
     private String teamName;
 
     @Column(name = "titles", nullable = false)
     @ElementCollection(targetClass = Title.class)
+    @CollectionTable(name = "titles")
     private List<Title> titles;
 
     @Column(name = "direct_manager", nullable = false)
@@ -39,7 +36,7 @@ public class Employee {
     private String phone;
 
     @Column(name = "reporting_employees")
-    @ElementCollection(targetClass = Employee.class)
+    @ElementCollection(targetClass = Long.class)
     private List<Long> reportingEmployees;
 
 

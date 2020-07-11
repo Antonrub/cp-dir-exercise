@@ -1,21 +1,11 @@
 package com.cp.cpdir.service;
 
-
 import com.cp.cpdir.model.Employee;
 import com.cp.cpdir.model.Title;
 import com.cp.cpdir.repository.EmployeeRepository;
-import org.hibernate.Criteria;
-import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Example;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import java.util.*;
-import java.util.function.Predicate;
 
 /**
  * Service class that will facilitate operations by communicating with the repository
@@ -36,19 +26,8 @@ public class EmployeeService {
      * @param employee to be added to the repository
      */
     public boolean saveDeveloper(Employee employee) {
-        // Make sure that id consists of numbers only
-        if (titlesLegalityCheck(employee.getTitles(), "developer")) {
-            try {
-                employee.setReportingEmployees(new LinkedList<>());
-                employeeRepository.save(employee);
-                return true;
-            }
-            catch (ConstraintViolationException e){
-                //Logger?
-                return false;
-            }
-        }
-        return false;
+        return (titlesLegalityCheck(employee.getTitles(), "developer") && employee.getDirectManager() != null) &&
+                saveEmployee(employee);
     }
 
 
@@ -58,18 +37,7 @@ public class EmployeeService {
      * @param employee to be added to the repository
      */
     public boolean saveManager(Employee employee) {
-        if (titlesLegalityCheck(employee.getTitles(), "manager")) {
-            try {
-                employee.setReportingEmployees(new LinkedList<>());
-                employeeRepository.save(employee);
-                return true;
-            }
-            catch (ConstraintViolationException e){
-                //Logger?
-                return false;
-            }
-        }
-        return false;
+        return titlesLegalityCheck(employee.getTitles(), "manager") && saveEmployee(employee);
     }
 
     /**
@@ -87,21 +55,22 @@ public class EmployeeService {
             if (directManager == null) return false;
 
             List<Long> directEmps = emp.getReportingEmployees();
-
-            employeeRepository.deleteById(employeeId);
+            List<Employee> employeesToSave = new ArrayList<>();
+            directManager.getReportingEmployees().remove(employeeId);
+            employeesToSave.add(directManager);
 
             for (Long id : directEmps) {
                 Employee dirEmp = employeeRepository.findById(id).orElse(null);
                 dirEmp.setDirectManager(directManagerId);
                 directManager.getReportingEmployees().add(id);
-                employeeRepository.save(dirEmp);
+                employeesToSave.add(dirEmp);
             }
-
-            employeeRepository.save(directManager);
+            employeeRepository.deleteById(employeeId);
+            employeeRepository.saveAll(employeesToSave);
 
             return true;
         }
-        catch (ConstraintViolationException e){
+        catch (Exception e){
             //Logger?
             return false;
         }
@@ -117,17 +86,33 @@ public class EmployeeService {
             // Do input check before starting to save changes?
             Employee emp = employeeRepository.findById(employeeId).orElse(null);
             if (emp == null || !checkEditValuesValidity(employeeDetails, emp)) return false;
-
-            if (employeeDetails.getId() != null) emp.setId(employeeDetails.getId());
+            List<Employee> employeesToSave = new ArrayList<>(); //saves all the employees affected by edit
+            employeesToSave.add(emp);
+            if (employeeDetails.getId() != null) {
+                Employee oldManager = updateDirectManagerIdChange(emp, employeeDetails.getId());
+                if (oldManager == null) return false;
+                else employeesToSave.add(oldManager);
+                emp.setId(employeeDetails.getId());
+            }
             if (employeeDetails.getFirstName() != null) emp.setFirstName(employeeDetails.getFirstName());
             if (employeeDetails.getLastName() != null) emp.setLastName(employeeDetails.getLastName());
             if (employeeDetails.getPhone() != null) emp.setPhone(employeeDetails.getPhone());
             if (employeeDetails.getTeamName() != null) emp.setTeamName(employeeDetails.getTeamName());
             if (employeeDetails.getTitles() != null ) emp.setTitles(employeeDetails.getTitles());
-            if (employeeDetails.getDirectManager() != null) emp.setDirectManager(employeeDetails.getDirectManager());
+            if (employeeDetails.getDirectManager() != null){
+                Employee oldManager = updateDirectManagerIdChange(emp, employeeDetails.getId());
+                if (oldManager == null) return false;
+                else employeesToSave.add(oldManager);
+
+                emp.setDirectManager(employeeDetails.getDirectManager());
+                Employee newManager = addDirectManagerReportingEmp(emp, employeeDetails.getDirectManager());
+                if (newManager == null) return false;
+                else employeesToSave.add(newManager);
+            }
+            employeeRepository.saveAll(employeesToSave);
             return true;
         }
-        catch (ConstraintViolationException e){
+        catch (Exception e){
             return false;
         }
     }
@@ -143,12 +128,69 @@ public class EmployeeService {
         if (emp == null) return Collections.singletonMap("failed", new LinkedList<>());
         return order ?
                 Collections.singletonMap("employees",
-                        employeeRepository.findAllByIdOrderByLastNameAscFirstNameAsc(gatherReportingEmployees(emp))) :
+                        employeeRepository.findByIdInOrderByLastNameAscFirstNameAsc(gatherReportingEmployees(emp))) :
                 Collections.singletonMap("employees",
-                        employeeRepository.findAllByIdOrderByLastNameDescFirstNameDesc(gatherReportingEmployees(emp)));
+                        employeeRepository.findByIdInOrderByLastNameDescFirstNameDesc(gatherReportingEmployees(emp)));
     }
 
     // =================================================================================================
+
+    /**
+     * Updates employee's manager's directEmployees because of id change
+     * @param employee whos id is about to change
+     * @param newId of the employee
+     * @return old manager with updated id
+     */
+    private Employee updateDirectManagerIdChange(Employee employee, Long newId){
+        try{
+            Employee oldManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
+            if (oldManager == null) return null;
+            oldManager.getReportingEmployees().remove(employee.getId());
+            oldManager.getReportingEmployees().add(newId);
+            return oldManager;
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * Adds employee to newManager's reporting employees
+     * @param employee employee to be added
+     * @param newManagerId that will receive @employee as a direct employee
+     * @return Manager after change in case of success, null otherwise
+     */
+    private Employee addDirectManagerReportingEmp(Employee employee, Long newManagerId){
+        try {
+            Employee newManager = employeeRepository.findById(newManagerId).orElse(null);
+            if (newManager == null) return null;
+            newManager.getReportingEmployees().add(employee.getId());
+            return newManager;
+        }
+        catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * saves an employee
+     * @param employee to save in repository
+     * @return true iff succeeded to save employee
+     */
+    private boolean saveEmployee(Employee employee){
+        try {
+            employee.setReportingEmployees(new LinkedList<>());
+            Employee dirManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
+            if (dirManager == null) return false;
+            employeeRepository.save(employee);
+            dirManager.getReportingEmployees().add(employee.getId());
+            employeeRepository.save(dirManager);
+            return true;
+        }
+        catch (Exception e){
+            return false;
+        }
+    }
 
     /**
      * Returns all employees records
@@ -193,7 +235,7 @@ public class EmployeeService {
      * @return true iff all the non vals of @employeeDetails are legal
      */
     private boolean checkEditValuesValidity(Employee employeeDetails, Employee currentEmp){
-        if (employeeDetails.getId() != null && (employeeDetails.getId() == 1)) return false;
+        if (employeeDetails.getId() != null && ((employeeDetails.getId() == 1) || employeeRepository.existsById(employeeDetails.getId()))) return false;
         if (employeeDetails.getFirstName() != null && employeeDetails.getFirstName().length() == 0) return false;
         if (employeeDetails.getLastName() != null && employeeDetails.getLastName().length() == 0) return false;
         if (employeeDetails.getTeamName() != null && employeeDetails.getTeamName().length() == 0) return false;
@@ -212,7 +254,7 @@ public class EmployeeService {
      * @return true iff there will be a management circularity after changing direct management of @currentEmp
      */
     private boolean containsManagementCircularity(Employee employeeDetails, Employee currentEmp){
-        Employee dirManager = employeeRepository.findById(employeeDetails.getId()).orElse(null);
+        Employee dirManager = employeeRepository.findById(employeeDetails.getDirectManager()).orElse(null);
         while(dirManager != null){
             if (dirManager.getId() == 1) // Reached Root - Gil Shwed
             {
