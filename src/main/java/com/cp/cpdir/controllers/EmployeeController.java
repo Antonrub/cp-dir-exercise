@@ -21,31 +21,34 @@ public class EmployeeController {
 
     @PostMapping("/addDeveloper")
     public Map<String, List<Employee>> addNewDeveloper(@RequestBody Employee employee){
-
-        return employeeService.saveDeveloper(employee) ?
+        String ans;
+        return (ans = employeeService.saveDeveloper(employee)) == null ?
                 Collections.singletonMap("employees", employeeService.getAllEmployees()) :
-                Collections.singletonMap("failed", null);
+                Collections.singletonMap(ans, null);
     }
 
     @PostMapping("/addManager")
     public Map<String, List<Employee>> addNewManager(@RequestBody Employee employee){
-        return employeeService.saveManager(employee) ?
+        String ans;
+        return (ans = employeeService.saveManager(employee)) == null ?
                 Collections.singletonMap("employees", employeeService.getAllEmployees()) :
-                Collections.singletonMap("failed", null);
+                Collections.singletonMap(ans, null);
     }
 
     @DeleteMapping("/removeEmployee/{id}")
     public Map<String, List<Employee>> removeEmployee(@PathVariable(value = "id") Long userId){
-        return employeeService.removeEmployee(userId) ?
+        String ans;
+        return (ans = employeeService.removeEmployee(userId)) == null ?
                 Collections.singletonMap("employees", employeeService.getAllEmployees()) :
-                Collections.singletonMap("failed", null);
+                Collections.singletonMap(ans, null);
     }
 
     @PostMapping("/editEmployee/{id}")
     public Map<String, List<Employee>> editEmployee(@PathVariable(value = "id") Long userId, @RequestBody Employee employeeDetails){
-        return employeeService.editEmployee(userId, employeeDetails) ?
+        String ans;
+        return (ans = employeeService.editEmployee(userId, employeeDetails)) == null ?
                 Collections.singletonMap("employees", employeeService.getAllEmployees()) :
-                Collections.singletonMap("failed", null);
+                Collections.singletonMap(ans, null);
     }
 
     @GetMapping("/reportingEmployees/{id},{order}")

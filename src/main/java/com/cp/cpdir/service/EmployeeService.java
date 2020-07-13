@@ -24,10 +24,12 @@ public class EmployeeService {
     /**
      * Saves a new developer if doesnt already exist
      * @param employee to be added to the repository
+     * @return null in case of success, failure reason otherwise
      */
-    public boolean saveDeveloper(Employee employee) {
-        return (titlesLegalityCheck(employee.getTitles(), "developer") && employee.getDirectManager() != null) &&
-                saveEmployee(employee);
+    public String saveDeveloper(Employee employee) {
+        String ans;
+        if ((ans = titlesLegalityCheck(employee.getTitles(), "developer")) != null) return ans;
+        return saveEmployee(employee);
     }
 
 
@@ -35,24 +37,31 @@ public class EmployeeService {
     /**
      * Saves a new manager if employee doesnt exist
      * @param employee to be added to the repository
+     * @return null in case of success, failure reason otherwise
      */
-    public boolean saveManager(Employee employee) {
-        return titlesLegalityCheck(employee.getTitles(), "manager") && saveEmployee(employee);
+    public String saveManager(Employee employee) {
+        String ans;
+        if ((ans = titlesLegalityCheck(employee.getTitles(), "manager")) != null) return ans;
+        return saveEmployee(employee);
     }
 
     /**
      * Removes an employee(except Gil Shwed). If a manager is removed, all of his
      * employees will become employees of his direct manager.
      * @param employeeId to be removed
+     * @return null in case of success, failure reason otherwise
      */
-    public boolean removeEmployee(Long employeeId) {
+    public String removeEmployee(Long employeeId) {
         try {
             Employee emp = employeeRepository.findById(employeeId).orElse(null);
-            if (emp == null) return false;
+            if (emp == null) return "Employee id doesnt exist";
 
             Long directManagerId = emp.getDirectManager();
             Employee directManager = employeeRepository.findById(directManagerId).orElse(null);
-            if (directManager == null) return false;
+            if (directManager == null){
+                System.out.println(String.format("removeEmployee :: employee with id:%d has manager with id that doesnt exist", employeeId));
+                return "Failed";
+            }
 
             List<Long> directEmps = emp.getReportingEmployees();
             List<Employee> employeesToSave = new ArrayList<>();
@@ -68,11 +77,11 @@ public class EmployeeService {
             employeeRepository.deleteById(employeeId);
             employeeRepository.saveAll(employeesToSave);
 
-            return true;
+            return null;
         }
         catch (Exception e){
-            //Logger
-            return false;
+            System.out.println("removeEmployee :: failed in removing employee with id: " + employeeId);
+            return "Failed";
         }
     }
 
@@ -80,17 +89,23 @@ public class EmployeeService {
      * Edit employee details
      * @param employeeId of an employee to be edited
      * @param employeeDetails - values of the details to be edited
+     * @return null iff succeeded, failure reason otherwise.
      */
-    public boolean editEmployee(Long employeeId, Employee employeeDetails) {
+    public String editEmployee(Long employeeId, Employee employeeDetails) {
         try{
-            // Do input check before starting to save changes?
             Employee emp = employeeRepository.findById(employeeId).orElse(null);
-            if (emp == null || !checkEditValuesValidity(employeeDetails, emp)) return false;
+            if (emp == null ) return "Wrong employee id";
+            String editValuesValidity;
+            if ((editValuesValidity = checkEditValuesValidity(employeeDetails, emp)) != null) return editValuesValidity;
+
             List<Employee> employeesToSave = new ArrayList<>(); //saves all the employees affected by edit
             employeesToSave.add(emp);
             if (employeeDetails.getId() != null) {
                 Employee oldManager = updateDirectManagerIdChange(emp, employeeDetails.getId());
-                if (oldManager == null) return false;
+                if (oldManager == null) {
+                    System.out.println("editEmployee :: Old manager id was present with no such employee in DB");
+                    return "Failed";
+                }
                 else employeesToSave.add(oldManager);
                 emp.setId(employeeDetails.getId());
             }
@@ -101,19 +116,20 @@ public class EmployeeService {
             if (employeeDetails.getTitles() != null ) emp.setTitles(employeeDetails.getTitles());
             if (employeeDetails.getDirectManager() != null){
                 Employee oldManager = updateDirectManagerIdChange(emp, employeeDetails.getId());
-                if (oldManager == null) return false;
+                if (oldManager == null) return "Failed";
                 else employeesToSave.add(oldManager);
 
                 emp.setDirectManager(employeeDetails.getDirectManager());
                 Employee newManager = addDirectManagerReportingEmp(emp, employeeDetails.getDirectManager());
-                if (newManager == null) return false;
+                if (newManager == null) return "Failed";
                 else employeesToSave.add(newManager);
             }
             employeeRepository.saveAll(employeesToSave);
-            return true;
+            return null;
         }
         catch (Exception e){
-            return false;
+            System.out.println("editEmployee :: failed editing employee details\n" + e.toString());
+            return "Failed";
         }
     }
 
@@ -150,6 +166,7 @@ public class EmployeeService {
             return oldManager;
         }
         catch (Exception e) {
+            System.out.println("updateDirectManagerIdChange :: failed changing id in direct employees list");
             return null;
         }
     }
@@ -168,6 +185,7 @@ public class EmployeeService {
             return newManager;
         }
         catch (Exception e) {
+            System.out.println("addDirectManagerReportingEmp :: failed updating direct employees list");
             return null;
         }
     }
@@ -175,28 +193,46 @@ public class EmployeeService {
     /**
      * saves an employee
      * @param employee to save in repository
-     * @return true iff succeeded to save employee
+     * @return null iff succeeded, failure reason otherwise.
      */
-    private boolean saveEmployee(Employee employee){
+    private String saveEmployee(Employee employee){
+        if (!valuesNotNull(employee)) return "All employee fields must have value";
         try {
             List<Employee> employeesToSave = new ArrayList<>();
             employee.setReportingEmployees(new LinkedList<>());
             if (employee.getId() != 1) { // saved for Gil Shwed
                 Employee dirManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
-                if (dirManager == null || !titlesLegalityCheck(dirManager.getTitles(), "manager")) return false;
+                if (dirManager == null) return "Manager id doesnt exist";
+                String titlesCheck;
+                if ((titlesCheck = titlesLegalityCheck(dirManager.getTitles(), "manager")) != null) return titlesCheck;
                 dirManager.getReportingEmployees().add(employee.getId());
                 employeesToSave.add(dirManager);
             }
             employeesToSave.add(employee);
             employeeRepository.saveAll(employeesToSave);
 
-            return true;
+            return null;
         }
         catch (Exception e){
-            return false;
+            System.out.println("Error happened in saveEmployee\n" + e.toString());
+            return "Failed adding employee";
         }
     }
 
+    /**
+     * Checks if all required employee values arn't null
+     * @param emp employee to check
+     * @return true iff all values != null
+     */
+    private boolean valuesNotNull(Employee emp){
+        return emp.getId() != null &&
+                emp.getTitles() != null &&
+                emp.getDirectManager() != null &&
+                emp.getTeamName() != null &&
+                emp.getLastName() != null &&
+                emp.getFirstName() != null &&
+                emp.getPhone() != null;
+    }
     /**
      * Returns all employees records
      * @return List of employees in DB
@@ -218,36 +254,48 @@ public class EmployeeService {
      * Checks if input id is legal - only numbers and longer then 0.
      * @param titles to check
      * @param type can be developer | manager
-     * @return true iff titles correspond to type
+     * @return null iff titles are legal, failure reason otherwise.
      */
-    private boolean titlesLegalityCheck(List<Title> titles, String type) {
+    private String titlesLegalityCheck(List<Title> titles, String type) {
         switch (type){
             case "developer":
-                return titles.contains(Title.SoftwareDeveloper);
+                return titles.contains(Title.SoftwareDeveloper) ? null : "Titles must contain developer type title";
             case "manager":
                 for (Title t : titles) {
-                    if (_managerialTitles.contains(t)) return true;
+                    if (_managerialTitles.contains(t)) return null;
                 }
-                return false;
+                return "Titles must contain manager type title";
         }
-        return false;
+        return "Failed";
     }
 
     /**
      * Check all the input values for validity
      * @param employeeDetails new values of the details to be edited
      * @param currentEmp Employee instance of the Employee to be edited
-     * @return true iff all the non vals of @employeeDetails are legal
+     * @return null iff all values of @employeeDetails are valid, failure reason otherwise.
      */
-    private boolean checkEditValuesValidity(Employee employeeDetails, Employee currentEmp){
-        if (employeeDetails.getId() != null && ((employeeDetails.getId() == 1) || employeeRepository.existsById(employeeDetails.getId()))) return false;
-        if (employeeDetails.getFirstName() != null && employeeDetails.getFirstName().length() == 0) return false;
-        if (employeeDetails.getLastName() != null && employeeDetails.getLastName().length() == 0) return false;
-        if (employeeDetails.getTeamName() != null && employeeDetails.getTeamName().length() == 0) return false;
+    private String checkEditValuesValidity(Employee employeeDetails, Employee currentEmp){
+        if (employeeDetails.getId() != null && employeeRepository.existsById(employeeDetails.getId()))
+            return "Id already exist";
+        if (employeeDetails.getFirstName() != null && employeeDetails.getFirstName().length() == 0)
+            return "First name must be longer than 0";
+        if (employeeDetails.getLastName() != null && employeeDetails.getLastName().length() == 0)
+            return "Last name must be longer than 0";
+        if (employeeDetails.getTeamName() != null && employeeDetails.getTeamName().length() == 0)
+            return "Team name must be longer than 0";
         if (employeeDetails.getTitles() != null &&
-                ((currentEmp.getReportingEmployees().size() != 0 && !titlesLegalityCheck(employeeDetails.getTitles(), "manager")))) return false;
-        if (employeeDetails.getDirectManager() != null && (!employeeRepository.existsById(employeeDetails.getDirectManager()) || containsManagementCircularity(employeeDetails, currentEmp))) return false;
-        return employeeDetails.getPhone() == null || numericLegalityCheck(employeeDetails.getPhone());
+                ((currentEmp.getReportingEmployees().size() != 0 && titlesLegalityCheck(employeeDetails.getTitles(), "manager") != null)))
+            return "Employee with direct employees must have manager title";
+        if (employeeDetails.getDirectManager() != null) {
+            if (!employeeRepository.existsById(employeeDetails.getDirectManager()))
+                return "Direct manager id doesn't exist";
+            if (containsManagementCircularity(employeeDetails, currentEmp))
+                return "Changing direct manager will cause management circularity";
+        }
+        if (employeeDetails.getPhone() != null && !numericLegalityCheck(employeeDetails.getPhone()))
+            return "Phone number must consist of numbers only";
+        return null;
     }
 
     /**

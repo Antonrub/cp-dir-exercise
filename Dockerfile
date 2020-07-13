@@ -1,8 +1,8 @@
-FROM openjdk:11-nanoserver
+FROM openjdk
 
 LABEL maintainer="antonru@checkpoint.com"
 
-COPY target/cp-dir.jar /cp-dir.jar
+COPY /cp-dir-0.0.1-SNAPSHOT.jar /cp-dir.jar
 EXPOSE 8089
 
 CMD ["java", "-jar", "cp-dir.jar"]
