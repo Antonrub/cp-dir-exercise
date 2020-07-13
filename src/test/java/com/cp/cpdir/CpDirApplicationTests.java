@@ -197,7 +197,7 @@ class CpDirApplicationTests {
 
         employee3.setLastName("Babu");
         employee3.setDirectManager(9L);
-        employee3.setPhone("1");
+        employee3.setPhone("2");
         employee3.setTeamName("Third Team");
         employee3.setTitles(new LinkedList<>(Arrays.asList(Title.TechnologyLeader, Title.SoftwareDeveloper)));
 

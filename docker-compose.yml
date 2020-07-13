@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  db:
+    image: mysql
+    networks:
+      cpnetwork:
+        aliases:
+            - db
+    volumes:
+      - data-volume:/var/lib/db
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=employees_database
+    ports:
+      - 3306:3306
+
+  target:
+    image: cp-dir
+    networks:
+      - cpnetwork
+    build: target
+    restart: on-failure
+    depends_on:
+      - db
+    ports:
+      - 8089:8089
+    environment:
+      - DATABASE_HOST=db
+      - DATABASE_NAME=employees_database
+      - DATABASE_PORT=3306
+      
+networks:
+    cpnetwork:
+    
+volumes:
+    data-volume:

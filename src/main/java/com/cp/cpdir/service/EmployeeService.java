@@ -71,7 +71,7 @@ public class EmployeeService {
             return true;
         }
         catch (Exception e){
-            //Logger?
+            //Logger
             return false;
         }
     }
@@ -183,7 +183,7 @@ public class EmployeeService {
             employee.setReportingEmployees(new LinkedList<>());
             if (employee.getId() != 1) { // saved for Gil Shwed
                 Employee dirManager = employeeRepository.findById(employee.getDirectManager()).orElse(null);
-                if (dirManager == null) return false;
+                if (dirManager == null || !titlesLegalityCheck(dirManager.getTitles(), "manager")) return false;
                 dirManager.getReportingEmployees().add(employee.getId());
                 employeesToSave.add(dirManager);
             }
@@ -245,8 +245,7 @@ public class EmployeeService {
         if (employeeDetails.getLastName() != null && employeeDetails.getLastName().length() == 0) return false;
         if (employeeDetails.getTeamName() != null && employeeDetails.getTeamName().length() == 0) return false;
         if (employeeDetails.getTitles() != null &&
-                ((currentEmp.getReportingEmployees().size() != 0 && !titlesLegalityCheck(employeeDetails.getTitles(), "manager")) /*||
-                        employeeDetails.getTitles().contains(Title.CEO)*/)) return false;
+                ((currentEmp.getReportingEmployees().size() != 0 && !titlesLegalityCheck(employeeDetails.getTitles(), "manager")))) return false;
         if (employeeDetails.getDirectManager() != null && (!employeeRepository.existsById(employeeDetails.getDirectManager()) || containsManagementCircularity(employeeDetails, currentEmp))) return false;
         return employeeDetails.getPhone() == null || numericLegalityCheck(employeeDetails.getPhone());
     }
