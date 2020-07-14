@@ -16,11 +16,11 @@ services:
     ports:
       - 3306:3306
 
-  target:
+  cp-dir:
     image: cp-dir
     networks:
       - cpnetwork
-    build: target
+    build: .
     restart: on-failure
     depends_on:
       - db
